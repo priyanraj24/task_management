@@ -115,7 +115,8 @@ migrations/                  # Alembic migrations
 │   ├── 003_create_tasks_and_task_history_tables.py
 │   ├── 004_create_attachments_table.py
 │   ├── 005_add_soft_delete_columns.py
-│   └── 006_add_assigned_to_to_projects.py
+│   ├── 006_add_assigned_to_to_projects.py
+│   └── 007_add_updated_at_columns.py
 ```
 
 ## Database Migrations
@@ -152,6 +153,7 @@ alembic revision --autogenerate -m "describe your change"
 | `004` | Create `attachments` table |
 | `005` | Add soft delete columns (`is_deleted`, `deleted_at`) to all tables |
 | `006` | Add `assigned_to` column to projects (manager assignment) |
+| `007` | Add `updated_at` column to users, projects, tasks |
 
 ## Database Relationships
 
@@ -191,7 +193,9 @@ Attachment
 | **Manager** | View/update assigned projects | Create/assign tasks under assigned projects | - |
 | **Employee** | View projects with assigned tasks | View assigned tasks, update status only | - |
 
-All unauthorized access returns `403 Forbidden`.
+- Admin cannot edit/delete other admins or change their own role
+- All unauthorized access returns `403 Forbidden`
+- All update endpoints support partial updates (send only fields you want to change)
 
 ## API Endpoints
 
@@ -280,15 +284,18 @@ All responses follow a standardized format:
 
 | Field | Rules |
 |-------|-------|
-| Name (user/project) | Min 3, max 255 characters |
-| Password | Min 8, max 20 characters |
+| User name | Min 3, max 255; letters and spaces only |
+| Project/task name | Min 3, max 255; letters, numbers, spaces, hyphens, underscores |
+| Password | Min 8, max 20; must include uppercase, lowercase, digit, special character |
 | Email | Valid email format, unique |
 | Project status | planned, active, completed, cancelled |
 | Task status | todo, in_progress, completed, blocked |
 | Task priority | low, medium, high, critical |
 | Due date | Cannot be in the past (on create) |
-| File upload | pdf, png, jpg, txt only; max 10MB |
+| File upload | pdf, png, jpg, txt only; max 10MB; blocked on completed/blocked tasks and expired/cancelled projects |
 | Description | Optional, max 255 characters |
+| Assigned to (project) | Must be a user with manager role |
+| Assigned to (task) | Must be a user with employee role |
 
 ## Soft Delete
 

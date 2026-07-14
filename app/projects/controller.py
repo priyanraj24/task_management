@@ -129,6 +129,9 @@ def assign_project(db: Session, project_id: int, user_id: int, current_user):
     if user.role != "manager":
         raise HTTPException(status_code=400, detail="Project can only be assigned to a manager")
 
+    if project.assigned_to == user_id:
+        raise HTTPException(status_code=400, detail="Project is already assigned to this manager")
+
     try:
         return service.update(db, project, {"assigned_to": user_id}).to_dict()
     except SQLAlchemyError:

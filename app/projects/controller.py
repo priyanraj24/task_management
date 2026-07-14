@@ -70,11 +70,13 @@ def update_project(db: Session, project_id: int, data: dict, current_user):
     if current_user.role == "manager" and project.assigned_to != current_user.id and project.created_by != current_user.id:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    if data["name"] != project.name:
+    if "name" in data and data["name"] != project.name:
         if service.find_by_name(db, data["name"]):
             raise HTTPException(status_code=409, detail="Project with this name already exists")
 
-    if data["end_date"] < data["start_date"]:
+    start = data.get("start_date", project.start_date)
+    end = data.get("end_date", project.end_date)
+    if start and end and end < start:
         raise HTTPException(status_code=400, detail="End date cannot be before start date")
 
     data.pop("assigned_to", None)

@@ -57,10 +57,10 @@ class TaskCreate(BaseModel):
 
 
 class TaskUpdate(BaseModel):
-    title: str
+    title: Optional[str] = None
     description: Optional[str] = None
-    status: str
-    priority: str
+    status: Optional[str] = None
+    priority: Optional[str] = None
     due_date: Optional[date] = None
     assigned_to: Optional[int] = None
 
@@ -74,6 +74,8 @@ class TaskUpdate(BaseModel):
     @field_validator("title")
     @classmethod
     def validate_title(cls, v):
+        if v is None:
+            return v
         v = v.strip()
         if len(v) < 3:
             raise ValueError("Title must be at least 3 characters")
@@ -91,6 +93,8 @@ class TaskUpdate(BaseModel):
     @field_validator("status")
     @classmethod
     def validate_status(cls, v):
+        if v is None:
+            return v
         v = v.lower().strip()
         if v not in VALID_STATUSES:
             raise ValueError(f"Invalid status. Must be one of: {', '.join(VALID_STATUSES)}")
@@ -100,7 +104,7 @@ class TaskUpdate(BaseModel):
     @classmethod
     def validate_priority(cls, v):
         if v is None:
-            return "medium"
+            return v
         v = v.lower().strip()
         if v not in VALID_PRIORITIES:
             raise ValueError(f"Invalid priority. Must be one of: {', '.join(VALID_PRIORITIES)}")

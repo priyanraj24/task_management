@@ -41,7 +41,7 @@ def update_task(
     db: Session = Depends(get_db),
     current_user=Depends(require_roles("admin", "manager")),
 ):
-    data = controller.update_task(db, task_id, task.model_dump(), current_user)
+    data = controller.update_task(db, task_id, task.model_dump(exclude_none=True), current_user)
     return success_response(message="Task updated successfully", data=data)
 
 

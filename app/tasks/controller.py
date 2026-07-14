@@ -115,10 +115,11 @@ def update_task(db: Session, task_id: int, data: dict, current_user):
             raise HTTPException(status_code=400, detail="Task can only be assigned to an employee")
 
     old_status = task.status
+    new_status = data.get("status", old_status)
 
     try:
-        if data["status"] != old_status:
-            service.create_history(db, task_id, old_status, data["status"], current_user.id)
+        if new_status != old_status:
+            service.create_history(db, task_id, old_status, new_status, current_user.id)
 
         service.update_task(db, task, data)
     except SQLAlchemyError:
@@ -180,6 +181,17 @@ def upload_attachment(db: Session, task_id: int, file, current_user):
         raise HTTPException(status_code=404, detail="Task not found")
 
     check_task_access(db, task, current_user)
+
+    if task.status in ("completed", "blocked"):
+        raise HTTPException(status_code=400, detail="Cannot upload attachments to a completed or blocked task")
+
+    project = project_service.find_by_id(db, task.project_id)
+    if project and project.status in ("completed", "cancelled"):
+        raise HTTPException(status_code=400, detail="Cannot upload attachments to a task under a completed or cancelled project")
+
+    from datetime import date
+    if project and project.end_date and project.end_date < date.today():
+        raise HTTPException(status_code=400, detail="Cannot upload attachments to a task under an expired project")
 
     if not file.filename:
         raise HTTPException(status_code=400, detail="Filename is required")

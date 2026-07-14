@@ -38,7 +38,7 @@ def update_user(
     db: Session = Depends(get_db),
     current_user=Depends(require_roles("admin")),
 ):
-    data = controller.update_user(db, user_id, user.model_dump())
+    data = controller.update_user(db, user_id, user.model_dump(exclude_none=True), current_user.id)
     return success_response(message="User updated successfully", data=data)
 
 

@@ -52,7 +52,7 @@ def update_project(
     db: Session = Depends(get_db),
     current_user=Depends(require_roles("admin", "manager")),
 ):
-    data = controller.update_project(db, project_id, project.model_dump(), current_user)
+    data = controller.update_project(db, project_id, project.model_dump(exclude_none=True), current_user)
     return success_response(message="Project updated successfully", data=data)
 
 

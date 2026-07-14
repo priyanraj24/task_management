@@ -22,17 +22,25 @@ def get_user(db: Session, user_id: int):
     return user.to_dict()
 
 
-def update_user(db: Session, user_id: int, data: dict):
+def update_user(db: Session, user_id: int, data: dict, current_user_id: int):
     user = service.find_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if data["email"] != user.email:
-        if service.find_by_email(db, data["email"]):
+    if user.role == "admin" and user.id != current_user_id:
+        raise HTTPException(status_code=403, detail="Cannot edit another admin")
+
+    if user.id == current_user_id and data.get("role") and data["role"] != user.role:
+        raise HTTPException(status_code=400, detail="Cannot change your own role")
+
+    update_data = {k: v for k, v in data.items() if v is not None}
+
+    if "email" in update_data and update_data["email"] != user.email:
+        if service.find_by_email(db, update_data["email"]):
             raise HTTPException(status_code=409, detail="Email already exists")
 
     try:
-        return service.update(db, user, data).to_dict()
+        return service.update(db, user, update_data).to_dict()
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=409, detail="Email already exists")
@@ -48,6 +56,9 @@ def delete_user(db: Session, user_id: int, current_user_id: int):
     user = service.find_by_id(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    if user.role == "admin":
+        raise HTTPException(status_code=403, detail="Cannot delete another admin")
 
     try:
         service.soft_delete(db, user)

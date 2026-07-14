@@ -1,4 +1,8 @@
+import re
+
 from pydantic import BaseModel, EmailStr, field_validator
+
+NAME_REGEX = re.compile(r"^[a-zA-Z\s]+$")
 
 
 class UserRegister(BaseModel):
@@ -14,6 +18,8 @@ class UserRegister(BaseModel):
             raise ValueError("Name must be at least 3 characters")
         if len(v) > 255:
             raise ValueError("Name must not exceed 255 characters")
+        if not NAME_REGEX.match(v):
+            raise ValueError("Name can only contain letters and spaces")
         return v
 
     @field_validator("password")

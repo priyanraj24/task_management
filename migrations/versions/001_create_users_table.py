@@ -1,4 +1,3 @@
-
 from typing import Sequence, Union
 
 from alembic import op
@@ -14,15 +13,19 @@ def upgrade() -> None:
     op.create_table(
         "users",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("name", sa.String(length=100), nullable=False),
-        sa.Column("email", sa.String(length=100), nullable=False),
+        sa.Column("name", sa.String(100), nullable=False),
+        sa.Column("email", sa.String(100), nullable=False),
         sa.Column("password_hash", sa.String(), nullable=False),
-        sa.Column("role", sa.String(length=20), server_default="employee", nullable=False),
+        sa.Column("role", sa.String(20), server_default="employee", nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+        sa.Column("is_deleted", sa.Boolean(), server_default=sa.text("false"), nullable=False),
+        sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
         sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("email"),
     )
     op.create_index(op.f("ix_users_id"), "users", ["id"], unique=False)
-    op.create_index(op.f("ix_users_email"), "users", ["email"], unique=True)
+    op.create_index(op.f("ix_users_email"), "users", ["email"], unique=False)
 
 
 def downgrade() -> None:

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, Path, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.tasks.schemas import TaskUpdate, TaskStatusUpdate
+from app.tasks.schemas import TaskUpdate, TaskStatusUpdate, TaskAssign
 from app.auth.dependencies import get_current_user, require_roles
 from app.tasks import controller
 from app.response import success_response
@@ -14,13 +14,15 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 def get_tasks(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
+    title: str = Query("", max_length=100),
+    project_id: int = Query(None, ge=1),
+    employee_id: int = Query(None, ge=1),
     status: str = Query("", max_length=20),
     priority: str = Query("", max_length=20),
-    project_id: int = Query(None, ge=1),
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    data = controller.get_tasks(db, current_user, status, priority, project_id, page, limit)
+    data = controller.get_tasks(db, current_user, title, project_id, employee_id, status, priority, page, limit)
     return success_response(message="Tasks retrieved successfully", data=data)
 
 
@@ -48,11 +50,13 @@ def update_task(
 @router.delete("/{task_id}")
 def delete_task(
     task_id: int = Path(ge=1),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user=Depends(require_roles("admin")),
 ):
-    tasks = controller.delete_task(db, task_id, current_user)
-    return success_response(message="Task deleted successfully", data={"list": tasks})
+    data = controller.delete_task(db, task_id, current_user, page, limit)
+    return success_response(message="Task deleted successfully", data=data)
 
 
 @router.get("/{task_id}/history")
@@ -106,3 +110,25 @@ def update_task_status(
 ):
     data = controller.update_task_status(db, task_id, body.status, current_user)
     return success_response(message="Task status updated successfully", data=data)
+
+
+@router.post("/{task_id}/assign")
+def assign_task(
+    body: TaskAssign,
+    task_id: int = Path(ge=1),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_roles("admin", "manager")),
+):
+    data = controller.assign_task(db, task_id, body.user_id, current_user)
+    return success_response(message="Task assigned successfully", data=data)
+
+
+@router.delete("/{task_id}/unassign")
+def unassign_task(
+    body: TaskAssign,
+    task_id: int = Path(ge=1),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_roles("admin", "manager")),
+):
+    data = controller.unassign_task(db, task_id, body.user_id, current_user)
+    return success_response(message="Task unassigned successfully", data=data)

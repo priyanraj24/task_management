@@ -6,8 +6,8 @@ from sqlalchemy import pool
 from app.config import DATABASE_URL
 from app.database import Base
 from app.users.models import User
-from app.projects.models import Project
-from app.tasks.models import Task, TaskHistory, Attachment
+from app.projects.models import Project, ProjectUser
+from app.tasks.models import Task, TaskAssignment, TaskHistory, Attachment
 
 from alembic import context
 

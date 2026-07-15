@@ -19,7 +19,7 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     created_projects = relationship("Project", foreign_keys="Project.created_by", back_populates="creator")
-    assigned_projects = relationship("Project", foreign_keys="Project.assigned_to", back_populates="manager")
+    project_assignments = relationship("ProjectUser", foreign_keys="ProjectUser.user_id", back_populates="user")
     created_tasks = relationship("Task", foreign_keys="Task.created_by", back_populates="creator")
-    assigned_tasks = relationship("Task", foreign_keys="Task.assigned_to", back_populates="assignee")
+    task_assignments = relationship("TaskAssignment", foreign_keys="TaskAssignment.user_id", back_populates="user")
     uploaded_attachments = relationship("Attachment", back_populates="uploader")

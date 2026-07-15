@@ -10,16 +10,8 @@ VALID_PRIORITIES = ("low", "medium", "high", "critical")
 class TaskCreate(BaseModel):
     title: str
     description: Optional[str] = None
-    priority: Optional[str] = "medium"
-    due_date: Optional[date] = None
-    assigned_to: Optional[int] = None
-
-    @field_validator("assigned_to")
-    @classmethod
-    def validate_assigned_to(cls, v):
-        if v is not None and v < 1:
-            raise ValueError("Assigned user ID must be at least 1")
-        return v
+    priority: str
+    due_date: date
 
     @field_validator("title")
     @classmethod
@@ -41,8 +33,6 @@ class TaskCreate(BaseModel):
     @field_validator("priority")
     @classmethod
     def validate_priority(cls, v):
-        if v is None:
-            return "medium"
         v = v.lower().strip()
         if v not in VALID_PRIORITIES:
             raise ValueError(f"Invalid priority. Must be one of: {', '.join(VALID_PRIORITIES)}")
@@ -51,8 +41,19 @@ class TaskCreate(BaseModel):
     @field_validator("due_date")
     @classmethod
     def due_date_not_past(cls, v):
-        if v is not None and v < date.today():
+        if v < date.today():
             raise ValueError("Due date cannot be in the past")
+        return v
+
+
+class TaskAssign(BaseModel):
+    user_id: int
+
+    @field_validator("user_id")
+    @classmethod
+    def validate_user_id(cls, v):
+        if v < 1:
+            raise ValueError("User ID must be at least 1")
         return v
 
 
@@ -62,14 +63,6 @@ class TaskUpdate(BaseModel):
     status: Optional[str] = None
     priority: Optional[str] = None
     due_date: Optional[date] = None
-    assigned_to: Optional[int] = None
-
-    @field_validator("assigned_to")
-    @classmethod
-    def validate_assigned_to(cls, v):
-        if v is not None and v < 1:
-            raise ValueError("Assigned user ID must be at least 1")
-        return v
 
     @field_validator("title")
     @classmethod

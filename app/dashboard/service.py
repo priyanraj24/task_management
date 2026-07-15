@@ -1,5 +1,7 @@
-from sqlalchemy.orm import Session
+from fastapi import HTTPException
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 
 ADMIN_QUERY = """
@@ -26,7 +28,9 @@ ADMIN_QUERY = """
 
 MANAGER_QUERY = """
     WITH manager_projects AS (
-        SELECT id FROM projects WHERE (assigned_to = :user_id OR created_by = :user_id) AND is_deleted = false
+        SELECT pu.project_id AS id FROM project_users pu
+        JOIN projects p ON p.id = pu.project_id
+        WHERE pu.user_id = :user_id AND pu.is_deleted = false AND p.is_deleted = false
     ),
     project_summary AS (
         SELECT
@@ -51,7 +55,9 @@ MANAGER_QUERY = """
 
 EMPLOYEE_QUERY = """
     WITH assigned_tasks AS (
-        SELECT * FROM tasks WHERE assigned_to = :user_id AND is_deleted = false
+        SELECT t.* FROM tasks t
+        JOIN task_assignments ta ON ta.task_id = t.id
+        WHERE ta.user_id = :user_id AND ta.is_deleted = false AND t.is_deleted = false
     ),
     project_summary AS (
         SELECT
@@ -80,9 +86,25 @@ QUERIES = {
 }
 
 
-def get_summary(db: Session, role: str, user_id: int):
-    sql = QUERIES.get(role)
+def get_summary(db: Session, current_user):
+    sql = QUERIES.get(current_user.role)
     if not sql:
-        raise ValueError(f"Unknown role: {role}")
-    params = {"user_id": user_id} if role != "admin" else {}
-    return db.execute(text(sql), params).mappings().one()
+        raise HTTPException(status_code=400, detail=f"Unknown role: {current_user.role}")
+
+    params = {"user_id": current_user.id} if current_user.role != "admin" else {}
+
+    try:
+        row = db.execute(text(sql), params).mappings().one()
+    except SQLAlchemyError:
+        raise HTTPException(status_code=500, detail="Failed to fetch dashboard summary")
+
+    return {
+        "total_projects": row["total_projects"],
+        "active_projects": row["active_projects"],
+        "total_tasks": row["total_tasks"],
+        "todo_tasks": row["todo_tasks"],
+        "in_progress_tasks": row["in_progress_tasks"],
+        "completed_tasks": row["completed_tasks"],
+        "blocked_tasks": row["blocked_tasks"],
+        "overdue_tasks": row["overdue_tasks"],
+    }

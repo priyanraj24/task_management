@@ -14,10 +14,13 @@ router = APIRouter(prefix="/users", tags=["Users"])
 def get_users(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
+    name: str = Query("", max_length=100),
+    email: str = Query("", max_length=100),
+    role: str = Query("", max_length=20),
     db: Session = Depends(get_db),
     current_user=Depends(require_roles("admin")),
 ):
-    data = controller.get_users(db, page, limit, current_user.id)
+    data = controller.get_users(db, page, limit, current_user.id, name, email, role)
     return success_response(message="Users retrieved successfully", data=data)
 
 
@@ -35,18 +38,22 @@ def get_user(
 def update_user(
     user: UserUpdate,
     user_id: int = Path(ge=1),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user=Depends(require_roles("admin")),
 ):
-    data = controller.update_user(db, user_id, user.model_dump(exclude_none=True), current_user.id)
+    data = controller.update_user(db, user_id, user.model_dump(exclude_none=True), current_user.id, page, limit)
     return success_response(message="User updated successfully", data=data)
 
 
 @router.delete("/{user_id}")
 def delete_user(
     user_id: int = Path(ge=1),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user=Depends(require_roles("admin")),
 ):
-    controller.delete_user(db, user_id, current_user.id)
-    return success_response(message="User deleted successfully")
+    data = controller.delete_user(db, user_id, current_user.id, page, limit)
+    return success_response(message="User deleted successfully", data=data)

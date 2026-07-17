@@ -13,7 +13,7 @@ def upgrade() -> None:
     op.create_table(
         "tasks",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("title", sa.String(200), nullable=False),
+        sa.Column("title", sa.String(100), nullable=False),
         sa.Column("description", sa.String(), nullable=True),
         sa.Column("status", sa.String(20), server_default="todo", nullable=False),
         sa.Column("priority", sa.String(20), server_default="medium", nullable=False),

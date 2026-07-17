@@ -20,8 +20,8 @@ class ProjectCreate(BaseModel):
         v = v.strip()
         if len(v) < 3:
             raise ValueError("Project name must be at least 3 characters")
-        if len(v) > 255:
-            raise ValueError("Project name must not exceed 255 characters")
+        if len(v) > 100:
+            raise ValueError("Project name must not exceed 100 characters")
         if not NAME_REGEX.match(v):
             raise ValueError("Project name can only contain letters, numbers, spaces, hyphens and underscores")
         return v
@@ -60,8 +60,8 @@ class ProjectUpdate(BaseModel):
         v = v.strip()
         if len(v) < 3:
             raise ValueError("Project name must be at least 3 characters")
-        if len(v) > 255:
-            raise ValueError("Project name must not exceed 255 characters")
+        if len(v) > 100:
+            raise ValueError("Project name must not exceed 100 characters")
         if not NAME_REGEX.match(v):
             raise ValueError("Project name can only contain letters, numbers, spaces, hyphens and underscores")
         return v

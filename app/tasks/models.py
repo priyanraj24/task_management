@@ -24,7 +24,7 @@ class Task(Base):
     __tablename__ = "tasks"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(200), nullable=False)
+    title = Column(String(100), nullable=False)
     description = Column(String)
     status = Column(String(20), default="todo", nullable=False)
     priority = Column(String(20), default="medium", nullable=False)

@@ -19,8 +19,8 @@ class TaskCreate(BaseModel):
         v = v.strip()
         if len(v) < 3:
             raise ValueError("Title must be at least 3 characters")
-        if len(v) > 255:
-            raise ValueError("Title must not exceed 255 characters")
+        if len(v) > 100:
+            raise ValueError("Title must not exceed 100 characters")
         return v
 
     @field_validator("description")
@@ -72,8 +72,8 @@ class TaskUpdate(BaseModel):
         v = v.strip()
         if len(v) < 3:
             raise ValueError("Title must be at least 3 characters")
-        if len(v) > 255:
-            raise ValueError("Title must not exceed 255 characters")
+        if len(v) > 100:
+            raise ValueError("Title must not exceed 100 characters")
         return v
 
     @field_validator("description")

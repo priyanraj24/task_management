@@ -16,8 +16,8 @@ class UserRegister(BaseModel):
         v = v.strip()
         if len(v) < 3:
             raise ValueError("Name must be at least 3 characters")
-        if len(v) > 255:
-            raise ValueError("Name must not exceed 255 characters")
+        if len(v) > 100:
+            raise ValueError("Name must not exceed 100 characters")
         if not NAME_REGEX.match(v):
             raise ValueError("Name can only contain letters and spaces")
         return v

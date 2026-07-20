@@ -53,7 +53,7 @@ def delete_task(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
-    current_user=Depends(require_roles("admin")),
+    current_user=Depends(require_roles("admin", "manager")),
 ):
     data = controller.delete_task(db, task_id, current_user, page, limit)
     return success_response(message="Task deleted successfully", data=data)

@@ -296,6 +296,8 @@ def delete_task(db: Session, task_id: int, current_user, page: int = 1, limit: i
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
+    check_manager_task_access(db, task, current_user)
+
     try:
         assignments = db.query(TaskAssignment).filter(TaskAssignment.task_id == task_id, TaskAssignment.is_deleted == False).all()
         for a in assignments:

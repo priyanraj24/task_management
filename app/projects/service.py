@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -209,20 +211,20 @@ def delete_project(db: Session, project_id: int, current_user, page: int = 1, li
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    try:
+    check_manager_project_access(project, current_user)
 
-        project_assignments = db.query(ProjectUser).filter(ProjectUser.project_id == project.id, ProjectUser.is_deleted == False).all()
-        for pa in project_assignments:
-            pa.soft_delete()
-        tasks = db.query(Task).filter(Task.project_id == project.id, Task.is_deleted == False).all()
-        for task in tasks:
-            task_assignments = db.query(TaskAssignment).filter(TaskAssignment.task_id == task.id, TaskAssignment.is_deleted == False).all()
-            for ta in task_assignments:
-                ta.soft_delete()
-            attachments = db.query(Attachment).filter(Attachment.task_id == task.id, Attachment.is_deleted == False).all()
-            for att in attachments:
-                att.soft_delete()
-            task.soft_delete()
+    try:
+        now = datetime.now(timezone.utc)
+        soft_delete_data = {"is_deleted": True, "deleted_at": now}
+
+        db.query(ProjectUser).filter(ProjectUser.project_id == project.id, ProjectUser.is_deleted == False).update(soft_delete_data, synchronize_session=False)
+
+        task_ids = [t.id for t in db.query(Task.id).filter(Task.project_id == project.id, Task.is_deleted == False).all()]
+        if task_ids:
+            db.query(TaskAssignment).filter(TaskAssignment.task_id.in_(task_ids), TaskAssignment.is_deleted == False).update(soft_delete_data, synchronize_session=False)
+            db.query(Attachment).filter(Attachment.task_id.in_(task_ids), Attachment.is_deleted == False).update(soft_delete_data, synchronize_session=False)
+            db.query(Task).filter(Task.id.in_(task_ids), Task.is_deleted == False).update(soft_delete_data, synchronize_session=False)
+
         project.soft_delete()
         db.commit()
     except SQLAlchemyError:
@@ -317,19 +319,12 @@ def unassign_project(db: Session, project_id: int, user_id: int, current_user):
         assignment.soft_delete()
 
         if user.role == "employee":
-
             task_ids = db.query(Task.id).filter(Task.project_id == project_id, Task.is_deleted == False).subquery()
-            task_assignments = (
-                db.query(TaskAssignment)
-                .filter(
-                    TaskAssignment.task_id.in_(task_ids),
-                    TaskAssignment.user_id == user_id,
-                    TaskAssignment.is_deleted == False,
-                )
-                .all()
-            )
-            for ta in task_assignments:
-                ta.soft_delete()
+            db.query(TaskAssignment).filter(
+                TaskAssignment.task_id.in_(task_ids),
+                TaskAssignment.user_id == user_id,
+                TaskAssignment.is_deleted == False,
+            ).update({"is_deleted": True, "deleted_at": datetime.now(timezone.utc)}, synchronize_session=False)
 
         db.commit()
         db.refresh(project)

@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import text
@@ -299,12 +299,11 @@ def delete_task(db: Session, task_id: int, current_user, page: int = 1, limit: i
     check_manager_task_access(db, task, current_user)
 
     try:
-        assignments = db.query(TaskAssignment).filter(TaskAssignment.task_id == task_id, TaskAssignment.is_deleted == False).all()
-        for a in assignments:
-            a.soft_delete()
-        attachments = db.query(Attachment).filter(Attachment.task_id == task_id, Attachment.is_deleted == False).all()
-        for att in attachments:
-            att.soft_delete()
+        now = datetime.now(timezone.utc)
+        soft_delete_data = {"is_deleted": True, "deleted_at": now}
+
+        db.query(TaskAssignment).filter(TaskAssignment.task_id == task_id, TaskAssignment.is_deleted == False).update(soft_delete_data, synchronize_session=False)
+        db.query(Attachment).filter(Attachment.task_id == task_id, Attachment.is_deleted == False).update(soft_delete_data, synchronize_session=False)
         task.soft_delete()
         db.commit()
     except SQLAlchemyError:

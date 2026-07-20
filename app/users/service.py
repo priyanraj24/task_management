@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import HTTPException
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -133,12 +135,10 @@ def delete_user(db: Session, user_id: int, current_user_id: int, page: int = 1, 
         db.query(TaskAssignment).filter(TaskAssignment.assigned_by == user_id).update({"assigned_by": None})
         db.query(TaskHistory).filter(TaskHistory.changed_by == user_id).update({"changed_by": None})
         db.query(Attachment).filter(Attachment.uploaded_by == user_id).update({"uploaded_by": None})
-        project_assignments = db.query(ProjectUser).filter(ProjectUser.user_id == user_id, ProjectUser.is_deleted == False).all()
-        for pa in project_assignments:
-            pa.soft_delete()
-        task_assignments = db.query(TaskAssignment).filter(TaskAssignment.user_id == user_id, TaskAssignment.is_deleted == False).all()
-        for ta in task_assignments:
-            ta.soft_delete()
+        now = datetime.now(timezone.utc)
+        soft_delete_data = {"is_deleted": True, "deleted_at": now}
+        db.query(ProjectUser).filter(ProjectUser.user_id == user_id, ProjectUser.is_deleted == False).update(soft_delete_data, synchronize_session=False)
+        db.query(TaskAssignment).filter(TaskAssignment.user_id == user_id, TaskAssignment.is_deleted == False).update(soft_delete_data, synchronize_session=False)
         user.soft_delete()
         db.commit()
     except SQLAlchemyError:
